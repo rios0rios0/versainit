@@ -1,14 +1,9 @@
 package main
 
 import (
-	"github.com/rios0rios0/locallaunch/infrastracture/models"
+	"github.com/rios0rios0/locallaunch/util"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
-	"io/ioutil"
-	"os/exec"
-
-	"runtime"
 )
 
 var log = logrus.New()
@@ -18,46 +13,7 @@ type FileReader struct {
 	filePath string
 }
 
-// YamlData holds the yaml content
-
-// ReadYAML reads the YAML slice of code from the file
-func (f *FileReader) ReadYAML() (models.YamlData, error) {
-	log.Info("i entered in the function readyaml")
-	data, err := ioutil.ReadFile(f.filePath)
-	if err != nil {
-		log.WithError(err).Error("Error reading file")
-		return models.YamlData{}, err
-	}
-	var yamlData models.YamlData
-	err = yaml.Unmarshal(data, &yamlData)
-	if err != nil {
-		log.WithError(err).Error("Error parsing YAML")
-		return models.YamlData{}, err
-	}
-	return yamlData, nil
-}
-
 // ExecCommand executes a command in the operating system
-func ExecCommand(cmd string) error {
-	if runtime.GOOS == "windows" {
-		execwindows(cmd)
-	} else {
-		execlinux(cmd)
-
-	}
-	return nil
-}
-func execlinux(cmd string) error {
-
-	log.Info("o comando executado é " + cmd)
-	command := exec.Command("sh", "-c", cmd)
-	output, err := command.CombinedOutput()
-	if err != nil {
-		return err
-	}
-	log.Infof("Command output: %s", string(output))
-	return nil
-}
 
 var upCmd = &cobra.Command{
 	Use:   "up",
@@ -73,7 +29,7 @@ var upCmd = &cobra.Command{
 			return
 		}
 		for _, cmd := range yamlData.Up {
-			err = ExecCommand(cmd)
+			err = util.ExecCommand(cmd)
 			if err != nil {
 				log.WithError(err).Error("Error running command")
 				return
@@ -96,7 +52,7 @@ var downCmd = &cobra.Command{
 			return
 		}
 		for _, cmd := range yamlData.Down {
-			err = ExecCommand(cmd)
+			err = util.ExecCommand(cmd)
 			if err != nil {
 				log.WithError(err).Error("Error running command")
 				return
@@ -115,14 +71,4 @@ func main() {
 	rootCmd.AddCommand(upCmd)
 	rootCmd.AddCommand(downCmd)
 	rootCmd.Execute()
-}
-func execwindows(command string) {
-	log.Info("o comando executado é " + command)
-	cmd := exec.Command("cmd", "/c", command)
-	output, err := cmd.Output()
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	log.Info(string(output))
 }
