@@ -9,6 +9,7 @@ development practices, refer to the **[Development Guide](https://github.com/rio
 
 - [Go](https://go.dev/dl/) 1.26+
 - [Make](https://www.gnu.org/software/make/)
+- [Git](https://git-scm.com/) 2.0+
 
 ## Development Workflow
 
@@ -22,13 +23,23 @@ development practices, refer to the **[Development Guide](https://github.com/rio
    ```bash
    make build
    ```
-5. Make your changes
-6. Validate:
+   This compiles the CLI to `bin/vinit` from `./cmd/versainit`.
+5. Run the application (without building):
    ```bash
-   make lint
-   make test
-   make sast
+   make run
    ```
-7. Update `CHANGELOG.md` under `[Unreleased]`
-8. Commit following the [commit conventions](https://github.com/rios0rios0/guide/wiki/Life-Cycle/Git-Flow)
-9. Open a pull request against `main`
+6. Build a debug binary (with symbols for debuggers):
+   ```bash
+   make debug
+   ```
+7. Install locally:
+   ```bash
+   make install
+   ```
+   This builds and copies `bin/vinit` to `/usr/local/bin/vinit`.
+8. Run tests:
+   ```bash
+   go test ./...
+   ```
+9. Commit following the [commit conventions](https://github.com/rios0rios0/guide/wiki/Life-Cycle/Git-Flow)
+10. Open a pull request against `main`
