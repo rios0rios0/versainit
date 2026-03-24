@@ -16,6 +16,8 @@ Exceptions are acceptable depending on the circumstances (critical bug fixes tha
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-03-24
+
 ### Added
 
 - added `dev repo clone` command — discovers repos from Git providers, clones missing via SSH with parallel workers
