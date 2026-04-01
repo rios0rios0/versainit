@@ -16,11 +16,13 @@ Exceptions are acceptable depending on the circumstances (critical bug fixes tha
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-04-01
+
 ### Added
 
 - added `dev project lint` command -- detects language and runs lint commands via `langforge`
-- added `dev project test` command -- detects language and runs test commands via `langforge`
 - added `dev project sast` command -- runs the full SAST suite (CodeQL, Semgrep, Trivy, Hadolint, Gitleaks) with per-tool failure isolation and embedded default configs
+- added `dev project test` command -- detects language and runs test commands via `langforge`
 - added `dev repo fork-sync` command -- syncs forked repositories with their upstream parent, auto-detects forks via provider API, configures `upstream` remote automatically, and creates a `fork-sync/upstream` branch on conflict for manual resolution
 - added `ForkResolver` interface and GitHub implementation for resolving fork parent repository info via the GitHub API
 - added `ForkResolverStub` test double and `WithFork` builder method for fork-related testing
