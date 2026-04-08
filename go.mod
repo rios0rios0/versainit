@@ -1,6 +1,6 @@
 module github.com/rios0rios0/devforge
 
-go 1.26.1
+go 1.26.2
 
 require (
 	github.com/google/go-github/v66 v66.0.0
