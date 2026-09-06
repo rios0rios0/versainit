@@ -68,7 +68,7 @@ cmd/dev-toolkit/
   main.go                    -- all CLI wiring (Cobra commands, dependency construction, update check)
 internal/
   repo/
-    git.go                   -- GitRunner interface + DefaultGitRunner (exec.Command wrapper)
+    git.go                   -- GitRunner interface + DefaultGitRunner (exec.Command wrapper around the resolved git binary)
     provider.go              -- provider detection, maps, registry (includes Codeberg)
     credential.go            -- CredentialResolver contract + Env/CLI/Chain resolvers, CLIRunner
     logger.go                -- NewLogger factory for isolated logrus instances
@@ -85,7 +85,7 @@ internal/
     restore.go               -- restore GitHub as primary remote after failover
     *_test.go                -- BDD tests
   project/
-    runner.go                -- CommandRunner interface + DefaultCommandRunner (passthrough I/O via sh -c)
+    runner.go                -- CommandRunner interface + DefaultCommandRunner (passthrough I/O via the resolved sh -c)
     detect.go                -- LanguageDetector interface + DefaultLanguageDetector (wraps langforge)
     devconfig.go             -- ConfigReader interface + FileConfigReader (.dev.yaml) + dependency graph resolver
     orchestrate.go           -- RunStartWithDeps/RunStopWithDeps: recursive dependency start/stop
@@ -105,7 +105,7 @@ internal/
     info.go                  -- RunInfo: detect language, display metadata + dependencies
     *_test.go                -- BDD tests
   docker/
-    runner.go                -- Runner interface + DefaultRunner (exec.Command wrapper for docker)
+    runner.go                -- Runner interface + DefaultRunner (exec.Command wrapper around the resolved docker binary)
     ips.go                   -- RunIPs: list container IP addresses
     reset.go                 -- RunReset: stop all containers, prune resources with dry-run support
     *_test.go                -- BDD tests
@@ -124,6 +124,9 @@ internal/
     clear_logs.go            -- remove log files older than 5 days (Linux only)
     top5size.go              -- show top 5 largest items in a directory
     *_test.go                -- BDD tests
+  executable/
+    executable.go            -- Resolver + Resolve: locate external tools (git, docker, ssh, sh) on PATH once per process
+    *_test.go                -- BDD tests
   testutil/
     doubles/                 -- GitRunnerStub, ForgeProviderStub, ForkResolverStub, GistProviderStub, CommandRunnerStub, LanguageDetectorStub, LanguageDetectorMultiStub, ConfigReaderStub, DockerRunnerStub, FileSystemStub, MirrorProviderStub, SystemRunnerStub, CLIRunnerStub, CredentialResolverStub
     builders/                -- RepositoryBuilder
@@ -133,10 +136,11 @@ internal/
 
 - **Provider detection**: Mapper pattern from directory path segments (`github.com` -> `"github"`, `dev.azure.com` -> `"azuredevops"`, `codeberg.org` -> `"codeberg"`)
 - **Parallel operations**: Goroutines with semaphore channel (`runtime.NumCPU()` workers)
-- **Git operations**: Uses `exec.Command("git", ...)` behind `GitRunner` interface for testability
+- **External tools**: `git`, `docker`, `ssh` and `sh` are deliberately taken from the user's PATH (they live somewhere different on every supported platform, so absolute paths are not an option). `executable.Resolve` looks each one up once per process in a single audited place and refuses relative results; commands then run through that absolute path, never by bare name (SonarCloud `go:S4036`)
+- **Git operations**: Uses `exec.Command` on the resolved `git` binary behind `GitRunner` interface for testability
 - **SSH cloning**: Sets `GIT_SSH_COMMAND` with `StrictHostKeyChecking=accept-new` and `BatchMode=yes`
 - **Language detection**: Uses langforge's `LanguageRegistry` behind `LanguageDetector` interface for testability
-- **Docker operations**: Uses `exec.Command("docker", ...)` behind `docker.Runner` interface for testability
+- **Docker operations**: Uses `exec.Command` on the resolved `docker` binary behind `docker.Runner` interface for testability
 - **System operations**: Uses `exec.Command(...)` behind `system.Runner` and `FileSystem` interfaces; platform-gated via `runtime.GOOS`
 - **Credential resolution**: A `CredentialResolver` chain, not a bare `os.Getenv`. `EnvCredentialResolver` reads the provider's token env var; `CLICredentialResolver` asks the provider's own CLI for one (`gh auth token`, `az account get-access-token` scoped to the Azure DevOps resource, `glab auth token`), so an already authenticated CLI removes the need to export a second token. `ChainCredentialResolver` tries them in order -- env first, so an explicit token still overrides the CLI -- and on total failure reports *every* reason rather than only the last. Providers with no CLI integration (Codeberg) simply have no entry in `providerCLIMap` and stay env-only. Every consumer (`ResolveProvider`, `ResolveForkResolver`, `gist.ResolveProvider`) goes through the chain
 - **Fork sync**: Uses `ForkResolver` interface to query provider APIs for parent repo info; auto-adds `upstream` remote

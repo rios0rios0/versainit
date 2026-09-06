@@ -1,0 +1,3 @@
+kind: 'Fixed'
+body: 'fixed the SonarCloud `go:S4036` security hotspots by resolving the `git`, `docker`, `ssh` and `sh` binaries once per process through one audited helper and running them by absolute path, which also reports a missing tool clearly instead of an empty error'
+time: '2026-09-05T20:26:08.030935395Z'
