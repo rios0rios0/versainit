@@ -22,6 +22,13 @@ Exceptions are acceptable depending on the circumstances (critical bug fixes tha
 
 ## [Unreleased]
 
+## [0.10.7] - 2026-09-06
+
+### Fixed
+
+- declared test files as test sources for SonarCloud Automatic Analysis so duplicated test setup no longer fails the quality gate
+- fixed the SonarCloud `go:S4036` security hotspots by resolving the `git`, `docker`, `ssh` and `sh` binaries once per process through one audited helper and running them by absolute path, which also reports a missing tool clearly instead of an empty error
+
 ## [0.10.6] - 2026-09-04
 
 ### Changed
