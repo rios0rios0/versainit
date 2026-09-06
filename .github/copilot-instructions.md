@@ -62,6 +62,7 @@ Always reference these instructions first and fallback to search or bash command
 - `internal/docker/` -- Docker management: container IPs, environment reset
 - `internal/gist/` -- Gist operations: clone, sync (GitHub gists via SSH with description-derived slugs)
 - `internal/system/` -- System utilities: cleanup, clear-history, clear-logs, top5size
+- `internal/executable/` -- Locates external tools (git, docker, ssh, sh) on PATH once per process; runners execute the resolved absolute path
 - `internal/testutil/` -- Test doubles (stubs) and builders for all interfaces
 - `install.sh` -- Generic installer for GitHub releases
 - `Makefile` -- Build targets and development commands
@@ -73,6 +74,7 @@ Always reference these instructions first and fallback to search or bash command
 - **WIP branches**: Preserves dirty state during sync via temporary commits
 - **Worktree rule tables**: Ordered guard/removal rule slices classify linked worktrees; guards (locked, detached, dirty, unpushed) always win over removal rules
 - **Dependency injection**: All business logic accepts interfaces for testability
+- **External tool resolution**: `executable.Resolve` is the single place that looks the fixed toolchain (`git`, `docker`, `ssh`, `sh`) up on the user's PATH; those runners execute the resolved absolute path instead of a bare tool name (SonarCloud `go:S4036`). `system.DefaultRunner` and `DefaultCLIRunner` still take the binary from their caller
 - **SAST orchestration**: Per-tool failure isolation with embedded default configs
 - **Platform gating**: System commands conditionally registered via `runtime.GOOS`
 - **Automatic update check**: On startup via cliforge (skipped for `version`, `self-update`, dev builds)

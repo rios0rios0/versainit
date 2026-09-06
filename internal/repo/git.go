@@ -7,7 +7,12 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/rios0rios0/dev-toolkit/internal/executable"
 )
+
+// gitExecutable is the git CLI as it has to be found on the user's PATH.
+const gitExecutable = "git"
 
 // GitRunner abstracts git command execution for testability.
 type GitRunner interface {
@@ -16,13 +21,15 @@ type GitRunner interface {
 	Clone(url, target string) error
 }
 
-// DefaultGitRunner executes real git commands via [exec.CommandContext].
+// DefaultGitRunner executes real git commands via [exec.CommandContext], through the
+// git binary that [executable.Resolve] located on PATH.
 type DefaultGitRunner struct{}
 
 func (r *DefaultGitRunner) Run(dir string, args ...string) error {
-	cmd := exec.CommandContext(context.Background(), "git", args...) // #nosec G204
-	cmd.Dir = dir
-	cmd.Stdin = nil
+	cmd, err := r.command(dir, args...)
+	if err != nil {
+		return err
+	}
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%s: %s", strings.Join(args, " "), strings.TrimSpace(string(output)))
@@ -31,9 +38,10 @@ func (r *DefaultGitRunner) Run(dir string, args ...string) error {
 }
 
 func (r *DefaultGitRunner) Output(dir string, args ...string) string {
-	cmd := exec.CommandContext(context.Background(), "git", args...) // #nosec G204
-	cmd.Dir = dir
-	cmd.Stdin = nil
+	cmd, err := r.command(dir, args...)
+	if err != nil {
+		return ""
+	}
 	output, err := cmd.Output()
 	if err != nil {
 		return ""
@@ -50,10 +58,10 @@ func (r *DefaultGitRunner) Clone(url, target string) error {
 		return fmt.Errorf("failed to create clone parent directory %s: %w", parentDir, mkdirErr)
 	}
 
-	cmd := exec.CommandContext(
-		context.Background(), "git", "clone", url, target,
-	) // #nosec G204
-	cmd.Stdin = nil
+	cmd, err := r.command("", "clone", url, target)
+	if err != nil {
+		return err
+	}
 	cmd.Env = append(os.Environ(),
 		"GIT_SSH_COMMAND=ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes",
 	)
@@ -62,4 +70,17 @@ func (r *DefaultGitRunner) Clone(url, target string) error {
 		return fmt.Errorf("%s", strings.TrimSpace(string(cmdOutput)))
 	}
 	return nil
+}
+
+// command prepares a git invocation in dir that runs the resolved binary by absolute
+// path. An empty dir keeps the current working directory.
+func (r *DefaultGitRunner) command(dir string, args ...string) (*exec.Cmd, error) {
+	git, err := executable.Resolve(gitExecutable)
+	if err != nil {
+		return nil, err
+	}
+	cmd := exec.CommandContext(context.Background(), git, args...) // #nosec G204
+	cmd.Dir = dir
+	cmd.Stdin = nil
+	return cmd, nil
 }

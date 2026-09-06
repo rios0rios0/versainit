@@ -16,9 +16,15 @@ import (
 
 	globalEntities "github.com/rios0rios0/gitforge/pkg/global/domain/entities"
 	logger "github.com/sirupsen/logrus"
+
+	"github.com/rios0rios0/dev-toolkit/internal/executable"
 )
 
 const maxCloneArgs = 2
+
+// sshExecutable is the OpenSSH client used for the connectivity preflight, as it has to
+// be found on the user's PATH.
+const sshExecutable = "ssh"
 
 // PreflightFunc is a function that verifies SSH connectivity before cloning.
 type PreflightFunc func(providerName, sshAlias string, log logger.FieldLogger) error
@@ -245,10 +251,15 @@ func SSHPreflightHost(host, sshAlias string, log logger.FieldLogger) error {
 	}
 	log.WithField("host", sshHost).Info("verifying SSH connectivity")
 
+	ssh, err := executable.Resolve(sshExecutable)
+	if err != nil {
+		return fmt.Errorf("SSH preflight failed: %w", err)
+	}
+
 	var stderr bytes.Buffer
 	cmd := exec.CommandContext(
 		context.Background(),
-		"ssh",
+		ssh,
 		"-T",
 		"-o", "ConnectTimeout=10",
 		"-o", "BatchMode=yes",
@@ -257,7 +268,7 @@ func SSHPreflightHost(host, sshAlias string, log logger.FieldLogger) error {
 	) // #nosec G204
 	cmd.Stdin = nil
 	cmd.Stderr = &stderr
-	err := cmd.Run()
+	err = cmd.Run()
 
 	if err == nil {
 		log.WithField("host", sshHost).Info("SSH connectivity verified")
